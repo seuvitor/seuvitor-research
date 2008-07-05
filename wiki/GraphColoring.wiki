@@ -1,5 +1,4 @@
 #summary Implementation of coloring algorithms.
-#labels Featured
 
 =Introduction=
 
