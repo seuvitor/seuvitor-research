@@ -1,0 +1,10 @@
+#summary Implementation of coloring algorithms.
+
+=Introduction=
+
+Graph coloring is a hard combinatorial optimization problem. The Wikipedia has a page on [http://en.wikipedia.org/wiki/Graph_coloring graph coloring].
+
+Here we present an overview of the coloring algorithms implemented in this research. Code is accessible on the project's [http://seuvitor-research.googlecode.com/svn/trunk/ Subversion repository], and may be checked out anonymously using the command:
+{{{
+svn checkout http://seuvitor-research.googlecode.com/svn/trunk/ seuvitor-research -read-only
+}}}
