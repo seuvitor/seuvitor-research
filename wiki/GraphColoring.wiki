@@ -4,7 +4,7 @@
 
 Graph coloring is a hard combinatorial optimization problem. The Wikipedia has a page on [http://en.wikipedia.org/wiki/Graph_coloring graph coloring].
 
-Here we present an overview of the coloring algorithms implemented in this research. Code is stored in a Subversion repository, is accessible [http://seuvitor-research.googlecode.com/svn/trunk/coloring/src/ on the browser] and may be checked out anonymously using the command:
+Here we present an overview of the coloring algorithms implemented in this research. Code is stored in a Subversion repository, may be viewed [http://code.google.com/p/seuvitor-research/source/browse/trunk/coloring/src/ via browser] and may be checked out anonymously using the command:
 {{{
 svn checkout http://seuvitor-research.googlecode.com/svn/trunk/ seuvitor-research -read-only
 }}}
