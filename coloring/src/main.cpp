@@ -6,6 +6,7 @@
 
 #include "coloring.h"
 #include "dsatur.h"
+#include "rlf.h"
 
 int main() {
     
@@ -52,7 +53,7 @@ int main() {
         Instance* instance = new Instance(in);
         Solution* solution = new Solution(instance);
         
-        dsatur_constructSolution(instance, solution);
+        rlf_constructSolution(instance, solution);
 
         if (solution->isFeasible())
         {
