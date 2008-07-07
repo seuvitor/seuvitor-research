@@ -2,7 +2,7 @@ PROG = coloring
 CC = g++
 CFLAGS = -c -g
 SRC = ../src
-OBJS = main.o coloring.o dsatur.o
+OBJS = main.o coloring.o dsatur.o rlf.o
 TIMESTAMP = `date +%Y-%m-%d_%Hh%M`
 
 all: $(PROG)
@@ -18,6 +18,9 @@ coloring.o: $(SRC)/coloring.cpp
 
 dsatur.o: $(SRC)/dsatur.cpp $(SRC)/coloring.h
 	$(CC) $(CFLAGS) $(SRC)/dsatur.cpp
+
+rlf.o: $(SRC)/rlf.cpp $(SRC)/coloring.h
+	$(CC) $(CFLAGS) $(SRC)/rlf.cpp
 
 clean:
 	rm -f $(PROG) $(PROG).exe $(OBJS)
