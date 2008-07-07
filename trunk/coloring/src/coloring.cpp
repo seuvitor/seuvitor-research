@@ -1,4 +1,5 @@
 #include <vector>
+#include <set>
 #include <string>
 #include <sstream>
 
@@ -103,6 +104,12 @@ Solution::~Solution()
     {
         delete[] coloring;
     }
+}
+
+int Solution::k()
+{
+	std::set<int> uniqueColors(coloring, (coloring + instance->nvertices));
+	return uniqueColors.size();
 }
 
 bool Solution::isFeasible()

@@ -53,20 +53,14 @@ int main() {
         Solution* solution = new Solution(instance);
         
         dsatur_constructSolution(instance, solution);
-        
-        // Find the maximum color used
-        int k = 0;
-        for (int v = 0; v < instance->nvertices; ++v)
-            if (solution->coloring[v] > k)
-                k = solution->coloring[v];
-        
+
         if (solution->isFeasible())
         {
-            std::cout << filePath << " K = " << k << std::endl;
+            std::cout << filePath << " K = " << solution->k() << std::endl;
         }
         else
         {
-            std::cout << "Feasible solution not found. K = " << k << std::endl;
+            std::cout << filePath << " Feasible solution not found" << std::endl;
         }
         
         in.close();
