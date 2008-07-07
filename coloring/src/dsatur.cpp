@@ -42,12 +42,12 @@ int maximumSaturatedVertex(int* uncolored, int uncoloredSize,
 /**
  * Finds the minimum color for coloring vertex without creating any conflicts.
  */
-int minFeasibleColor(int v, int** adjColors)
+int minFeasibleColor(int v, char** adjColors)
 {
-	int* colors = adjColors[v];
+	char* colors = adjColors[v];
 	int minFeasibleColor = -1;
 	bool foundMinFeasibleColor = false;
-	for (int color = 1; !foundMinFeasibleColor; ++color)
+	for (int color = 0; !foundMinFeasibleColor; ++color)
 	{
 		if (colors[color] == 0)
 		{
@@ -62,7 +62,7 @@ int minFeasibleColor(int v, int** adjColors)
  * Update adjacencies of vertex after setting its color.
  */
 void updateAdjacencies(Instance* instance, Solution* solution, int vertexId,
-		int color, int** adjColors, int* numAdjColors, int* numAdjUncolored)
+		int color, char** adjColors, int* numAdjColors, int* numAdjUncolored)
 {
     // Gets adjacency of vertex vertexId
     int* adj = instance->gamma[vertexId];
@@ -74,9 +74,9 @@ void updateAdjacencies(Instance* instance, Solution* solution, int vertexId,
 		int adjVertexId = *it;
 		
 		// Only update if the adjacent vertex is uncolored
-		if (solution->coloring[adjVertexId] == 0)
+		if (solution->coloring[adjVertexId] == -1)
 		{
-			int* colors = adjColors[adjVertexId];
+			char* colors = adjColors[adjVertexId];
 			if (colors[color] == 0)
 			{
 				colors[color] = 1;
@@ -116,10 +116,10 @@ void dsatur_constructSolution(Instance* instance, Solution* solution)
     
 	// For each vertex v, adjColors contains a 0-1 vector where the content of
 	// index c indicates if color c is used in the adjacency of v
-    int** adjColors = new int*[numVertices];
+    char** adjColors = new char*[numVertices];
     for (int i = 0; i < numVertices; ++i)
     {
-    	adjColors[i] = new int[numVertices];
+    	adjColors[i] = new char[numVertices];
     	for (int j = 0; j < numVertices; ++j)
     	{
     		adjColors[i][j] = 0;

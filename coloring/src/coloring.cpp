@@ -95,7 +95,7 @@ Solution::Solution(Instance* instance) :
 {
 	maxColor = 0;
     coloring = new int[instance->nvertices];
-    for (int i = 0; i < instance->nvertices; ++i) coloring[i] = 0;
+    for (int i = 0; i < instance->nvertices; ++i) coloring[i] = -1;
 }
 
 Solution::~Solution()
@@ -120,7 +120,7 @@ bool Solution::isFeasible()
 	{
 		// Check whether all vertices are colored
 		int uColor = coloring[u];
-		if (uColor == 0)
+		if (uColor == -1)
 		{
 			violationFound = true;
 			break;
