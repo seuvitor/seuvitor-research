@@ -1,6 +1,6 @@
 #summary Implementation of coloring algorithms.
 
-=Introduction=
+==Introduction==
 
 Graph coloring is a hard combinatorial optimization problem. The Wikipedia has a page on [http://en.wikipedia.org/wiki/Graph_coloring graph coloring].
 
