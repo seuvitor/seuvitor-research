@@ -25,6 +25,7 @@ struct Solution
 	~Solution();
 
     bool isFeasible();
+    int k();
     
     void print(std::ostream& out);
 };
