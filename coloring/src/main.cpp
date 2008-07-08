@@ -8,69 +8,55 @@
 #include "dsatur.h"
 #include "rlf.h"
 
-int main() {
+int main(int argc, char** argv) {
+
+	// Check if algorithm specification and input file were given
+	if (argc != 3)
+	{
+		std::cerr << "Usage: " << argv[0] << " ALGORITHM_NAME INSTANCE_FILE" << std::endl;
+		return 1;
+	}
+	std::string algorithmName(argv[1]);
+	std::string fileName(argv[2]);
+
+    std::ifstream in;
+    in.open(fileName.c_str(), std::ifstream::in);
     
-    std::vector<std::string> filePaths;
-    filePaths.push_back("./instances/le450_5a.col");
-    filePaths.push_back("./instances/le450_5b.col");
-    filePaths.push_back("./instances/le450_5c.col");
-    filePaths.push_back("./instances/le450_5d.col");
-    filePaths.push_back("./instances/le450_15a.col");
-    filePaths.push_back("./instances/le450_15b.col");
-    filePaths.push_back("./instances/le450_15c.col");
-    filePaths.push_back("./instances/le450_15d.col");
-    filePaths.push_back("./instances/le450_25a.col");
-    filePaths.push_back("./instances/le450_25b.col");
-    filePaths.push_back("./instances/le450_25c.col");
-    filePaths.push_back("./instances/le450_25d.col");
-    filePaths.push_back("./instances/latin_square_10.col");
-    filePaths.push_back("./instances/fpsol2.i.1.col");
-    filePaths.push_back("./instances/fpsol2.i.2.col");
-    filePaths.push_back("./instances/fpsol2.i.3.col");
-    filePaths.push_back("./instances/inithx.i.1.col");
-    filePaths.push_back("./instances/inithx.i.2.col");
-    filePaths.push_back("./instances/inithx.i.3.col");
-    filePaths.push_back("./instances/mulsol.i.1.col");
-    filePaths.push_back("./instances/mulsol.i.2.col");
-    filePaths.push_back("./instances/mulsol.i.3.col");
-    filePaths.push_back("./instances/mulsol.i.4.col");
-    filePaths.push_back("./instances/mulsol.i.5.col");
-    filePaths.push_back("./instances/school1.col");
-    filePaths.push_back("./instances/school1_nsh.col");
-    filePaths.push_back("./instances/zeroin.i.1.col");
-    filePaths.push_back("./instances/zeroin.i.2.col");
-    filePaths.push_back("./instances/zeroin.i.3.col");
-	
+    Instance* instance = new Instance(in);
+    Solution* solution = new Solution(instance);
+
     time_t start;
     start = time(NULL);
 
-    for (std::vector<std::string>::iterator it = filePaths.begin(); it != filePaths.end(); ++it)
+    if (algorithmName.compare("dsatur"))
     {
-        std::string& filePath = *it;
-        std::ifstream in;
-        in.open(filePath.c_str(), std::ifstream::in);
-        
-        Instance* instance = new Instance(in);
-        Solution* solution = new Solution(instance);
-        
-        rlf_constructSolution(instance, solution);
-
-        if (solution->isFeasible())
-        {
-            std::cout << filePath << " K = " << solution->k() << std::endl;
-        }
-        else
-        {
-            std::cout << filePath << " Feasible solution not found" << std::endl;
-        }
-        
-        in.close();
-		
-        delete solution;
-        delete instance;
+	    dsatur_constructSolution(instance, solution);
+    }
+    else if (algorithmName.compare("rlf"))
+    {
+	    rlf_constructSolution(instance, solution);
     }
     
-    std::cout << "Total time: " << time(NULL) - start << "s" << std::endl;
+    time_t elapsedTime = time(NULL) - start;
+
+    if (solution->isFeasible())
+    {
+        std::cout << fileName.substr(0, fileName.size() - 4) << "\t"
+        		<< instance->nvertices << "\t"
+        		<< instance->nedges << "\t"
+        		<< solution->k() << "\t"
+        		<< elapsedTime << std::endl;
+    }
+    else
+    {
+        std::cout << fileName.substr(0, fileName.size() - 4)
+        		<< " Feasible solution not found" << std::endl;
+    }
+    
+    in.close();
+	
+    delete solution;
+    delete instance;
     
 	return 0;
 }
