@@ -4,7 +4,7 @@
 
 == Constructive heuristic algorithms ==
 
-We report here the results of running the complete set of instances over the DSATUR and RLF constructive heuristics. *z* is the best k-value found and *t* is the computational time to complete (in seconds), rounded to the nearest integer below.
+We report here the results of running the [ColoringInstances complete set of instances] over the DSATUR and RLF constructive heuristics. *z* is the best k-value found and *t* is the computational time to complete (in seconds), rounded to the nearest integer below.
 
 || *Instance* || *n* || *m* || *z,,DSATUR,,* || *z,,RLF,,* || *t,,DSATUR,,* || *t,,RLF,,* ||
 || DSJC1000.1 || 1000 || 99258 || 7 || 7 || 0 || 0 ||
