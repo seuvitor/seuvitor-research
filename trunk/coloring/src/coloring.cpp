@@ -79,10 +79,9 @@ void Instance::print(std::ostream& out)
         
         // Gets adjacency of vertex vertexId
         int* adj = gamma[i];
-        int adjSize = adj[0]; // Index zero contains size
         
-        // Iteration starts on index 1 and ends sizeAdj indices after the start
-        for (int *it = (adj + 1), *end = (it + adjSize); it != end; ++it)
+        // Iteration starts on index 1 and ends adj[0] indices after the start
+        for (int *it = (adj + 1), *end = (it + adj[0]); it != end; ++it)
     	{
     		out << *it << ", ";
     	}
@@ -128,10 +127,9 @@ bool Solution::isFeasible()
 		
         // Gets adjacency of vertex u
         int* adj = instance->gamma[u];
-        int adjSize = adj[0]; // Index zero contains size
         
-        // Iteration starts on index 1 and ends sizeAdj indices after the start
-        for (int *it = (adj + 1), *end = (it + adjSize); it != end; ++it)
+        // Iteration starts on index 1 and ends adj[0] indices after the start
+        for (int *it = (adj + 1), *end = (it + adj[0]); it != end; ++it)
 		{
             // Check whether there are conflicts between adjacent vertices
 			int v = *it;

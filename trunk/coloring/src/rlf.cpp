@@ -34,39 +34,49 @@ void moveVertexToFrontier(Instance* instance, int vertexId, std::set<int>& uncol
 	// to be linked to a colored vertex
 	uncoloredUnlinked.erase(vertexId);
 	
+	// Since this is a new vertex on the frontier, the count of links to
+	// frontier for each uncolored adjacent vertex is incremented
+	
     // Gets adjacency of vertex vertexId
     int* adj = instance->gamma[vertexId];
-    int sizeAdj = adj[0]; // Index zero contains size
+    int adjVertexId;
     
-    // Iteration starts on index 1 and ends sizeAdj indices after the start
-	for (int *it = (adj + 1), *end = (it + sizeAdj); it != end; ++it)
+    // Iteration starts on index 1 and ends adj[0] indices after the start
+	for (int *it = (adj + 1), *end = (it + adj[0]); it != end; ++it)
 	{
-		int adjVertexId = *it;
+		adjVertexId = *it;
 		++numLinksToFrontier[adjVertexId];
 	}
 }
 
 /**
- * Update adjacencies of a vertex after setting its colors.
+ * Update vertex and its adjacencies after setting its color.
  */
-void updateAdjacencies(Instance* instance, Solution* solution, int vertexId, std::set<int>& uncolored, std::set<int>& uncoloredUnlinked, int* numLinksToFrontier)
+void updateAfterColoring(Instance* instance, Solution* solution, int vertexId,
+		std::set<int>& uncolored, std::set<int>& uncoloredUnlinked,
+		int* numLinksToFrontier)
 {
+	// Since the vertex was colored, it is removed from both uncolored sets
 	uncolored.erase(vertexId);
 	uncoloredUnlinked.erase(vertexId);
-	
-    // Gets adjacency of vertex vertexId
-    int* adj = instance->gamma[vertexId];
-    int sizeAdj = adj[0]; // Index zero contains size
-    
-    // Iteration starts on index 1 and ends sizeAdj indices after the start
-	for (int *it = (adj + 1), *end = (it + sizeAdj); it != end; ++it)
-	{
-		int adjVertexId = *it;
-		
-		// Only update if the adjacent vertex is uncolored
-		if (solution->coloring[adjVertexId] != -1) continue;
 
-		moveVertexToFrontier(instance, adjVertexId, uncoloredUnlinked, numLinksToFrontier);
+	// Then, all remaining uncolored vertices adjacent to it enter the frontier
+	
+    // Get adjacency of vertex vertexId
+    int* adj = instance->gamma[vertexId];
+    int adjVertexId;
+    
+    // Iteration starts on index 1 and ends adj[0] indices after the start
+	for (int *it = (adj + 1), *end = (it + adj[0]); it != end; ++it)
+	{
+		adjVertexId = *it;
+		
+		// Only move adjacent vertex to frontier if it is uncolored
+		if (solution->coloring[adjVertexId] == -1)
+		{
+			moveVertexToFrontier(instance, adjVertexId, uncoloredUnlinked,
+					numLinksToFrontier);
+		}
 	}
 }
 
@@ -105,7 +115,7 @@ void rlf_constructSolution(Instance* instance, Solution* solution)
 			int vertexId = mostLinkedToFrontier(uncoloredUnlinked, numLinksToFrontier);
 			
 			solution->coloring[vertexId] = currentColor;
-			updateAdjacencies(instance, solution, vertexId, uncolored, uncoloredUnlinked, numLinksToFrontier);
+			updateAfterColoring(instance, solution, vertexId, uncolored, uncoloredUnlinked, numLinksToFrontier);
 		}
 		
 		// When all uncolored vertices are linked to a vertex in the current

@@ -66,10 +66,9 @@ void updateAdjacencies(Instance* instance, Solution* solution, int vertexId,
 {
     // Gets adjacency of vertex vertexId
     int* adj = instance->gamma[vertexId];
-    int sizeAdj = adj[0]; // Index zero contains size
     
-    // Iteration starts on index 1 and ends sizeAdj indices after the start
-	for (int *it = (adj + 1), *end = (it + sizeAdj); it != end; ++it)
+    // Iteration starts on index 1 and ends adj[0] indices after the start
+	for (int *it = (adj + 1), *end = (it + adj[0]); it != end; ++it)
 	{
 		int adjVertexId = *it;
 		
