@@ -10,7 +10,7 @@
 int maximumSaturatedVertex(int* uncolored, int uncoloredSize,
 		int* numAdjColors, int* numAdjUncolored)
 {
-    int sat, maxSat, maxVertex, maxVertexIdx, maxSatNumColoredNeighbors;
+    int sat, maxSat, maxVertex, maxVertexIdx;
     
     maxVertexIdx = 0;
     maxVertex = uncolored[0];
