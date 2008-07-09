@@ -1,6 +1,6 @@
 PROG = coloring
 CC = g++
-CFLAGS = -c -g
+CFLAGS = -c -g -Wall
 SRC = ../src
 OBJS = main.o coloring.o dsatur.o rlf.o
 TIMESTAMP = `date +%Y-%m-%d_%Hh%M`
