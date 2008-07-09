@@ -5,20 +5,34 @@
  * Returns the vertex with most links to the frontier, i.e., to vertices that
  * are uncolored, but are linked to a colored vertex.
  */
-int mostLinkedToFrontier(std::set<int>& uncoloredUnlinked, int* numLinksToFrontier)
+int mostLinkedToFrontier(std::set<int>& uncoloredUnlinked,
+		int* numLinksToFrontier, int* numLinksToUncolored)
 {
-    int vertex, links, maxLinks, maxVertex;
+    int vertex, maxVertex, linksToFrontier, maxLinksToFrontier,
+    		linksToUncolored, maxLinksToUncolored;
     
     maxVertex = -1;
-    maxLinks = -1;
+    maxLinksToFrontier = -1;
+    maxLinksToUncolored = -1;
     for (std::set<int>::iterator it = uncoloredUnlinked.begin(); it != uncoloredUnlinked.end(); ++it)
     {
     	vertex = *it;
-    	links = numLinksToFrontier[vertex];
-    	if (links > maxLinks)
+    	linksToFrontier = numLinksToFrontier[vertex];
+    	if (linksToFrontier > maxLinksToFrontier)
     	{
-            maxLinks = links;
+            maxLinksToFrontier = linksToFrontier;
+            maxLinksToUncolored = numLinksToUncolored[vertex];
             maxVertex = vertex;
+		}
+    	else if (linksToFrontier == maxLinksToFrontier)
+    	{
+    		linksToUncolored = numLinksToUncolored[vertex];
+        	if (linksToUncolored > maxLinksToUncolored)
+        	{
+                maxLinksToFrontier = linksToFrontier;
+                maxLinksToUncolored = linksToUncolored;
+                maxVertex = vertex;
+        	}
     	}
     }
     
@@ -54,7 +68,7 @@ void moveVertexToFrontier(Instance* instance, int vertexId, std::set<int>& uncol
  */
 void updateAfterColoring(Instance* instance, Solution* solution, int vertexId,
 		std::set<int>& uncolored, std::set<int>& uncoloredUnlinked,
-		int* numLinksToFrontier)
+		int* numLinksToFrontier, int* numLinksToUncolored)
 {
 	// Since the vertex was colored, it is removed from both uncolored sets
 	uncolored.erase(vertexId);
@@ -70,6 +84,10 @@ void updateAfterColoring(Instance* instance, Solution* solution, int vertexId,
 	for (int *it = (adj + 1), *end = (it + adj[0]); it != end; ++it)
 	{
 		adjVertexId = *it;
+		
+		// The count of links to uncolored vertices is decremented for every
+		// vertex that is adjacent to the recently colored vertex
+		--numLinksToUncolored[adjVertexId];
 		
 		// Only move adjacent vertex to frontier if it is uncolored
 		if (solution->coloring[adjVertexId] == -1)
@@ -99,6 +117,15 @@ void rlf_constructSolution(Instance* instance, Solution* solution)
     // linked to a colored vertex
     int* numLinksToFrontier = new int[numVertices];
     
+    // For all uncolored vertices, we keep the number of links to other
+    // uncolored vertices
+    int* numLinksToUncolored = new int[numVertices];
+    for (int i = 0; i < numVertices; ++i)
+    {
+    	// Index zero of gamma[i] contains its size
+    	numLinksToUncolored[i] = instance->gamma[i][0];
+    }
+    
     int currentColor = 0;
     while (uncolored.size() > 0)
 	{
@@ -112,10 +139,12 @@ void rlf_constructSolution(Instance* instance, Solution* solution)
 		
 		while (uncoloredUnlinked.size() > 0)
 		{
-			int vertexId = mostLinkedToFrontier(uncoloredUnlinked, numLinksToFrontier);
-			
+			int vertexId = mostLinkedToFrontier(uncoloredUnlinked,
+					numLinksToFrontier, numLinksToUncolored);
 			solution->coloring[vertexId] = currentColor;
-			updateAfterColoring(instance, solution, vertexId, uncolored, uncoloredUnlinked, numLinksToFrontier);
+			updateAfterColoring(instance, solution, vertexId, uncolored,
+					uncoloredUnlinked, numLinksToFrontier,
+					numLinksToUncolored);
 		}
 		
 		// When all uncolored vertices are linked to a vertex in the current
@@ -123,5 +152,6 @@ void rlf_constructSolution(Instance* instance, Solution* solution)
 		++currentColor;
 	}
     
+    if (numLinksToUncolored) delete[] numLinksToUncolored;
     if (numLinksToFrontier) delete[] numLinksToFrontier;
 }
