@@ -28,11 +28,11 @@ int main(int argc, char** argv) {
     time_t start;
     start = time(NULL);
 
-    if (algorithmName.compare("dsatur"))
+    if (algorithmName.compare("dsatur") == 0)
     {
 	    dsatur_constructSolution(instance, solution);
     }
-    else if (algorithmName.compare("rlf"))
+    else if (algorithmName.compare("rlf") == 0)
     {
 	    rlf_constructSolution(instance, solution);
     }
