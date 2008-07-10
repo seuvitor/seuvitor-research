@@ -46,7 +46,9 @@ void moveVertexToFrontier(Instance* instance, int vertexId, std::set<int>& uncol
 {
 	// Remove from unlinked, since all vertices on the frontier are supposed
 	// to be linked to a colored vertex
-	uncoloredUnlinked.erase(vertexId);
+	int countErased = uncoloredUnlinked.erase(vertexId);
+	
+	if (countErased == 0) return; // This vertex was already on the frontier
 	
 	// Since this is a new vertex on the frontier, the count of links to
 	// frontier for each uncolored adjacent vertex is incremented
@@ -85,16 +87,15 @@ void updateAfterColoring(Instance* instance, Solution* solution, int vertexId,
 	{
 		adjVertexId = *it;
 		
+		// If the adjacent vertex is colored, move to the next
+		if (solution->coloring[adjVertexId] != -1) continue;
+		
 		// The count of links to uncolored vertices is decremented for every
 		// vertex that is adjacent to the recently colored vertex
 		--numLinksToUncolored[adjVertexId];
 		
-		// Only move adjacent vertex to frontier if it is uncolored
-		if (solution->coloring[adjVertexId] == -1)
-		{
-			moveVertexToFrontier(instance, adjVertexId, uncoloredUnlinked,
-					numLinksToFrontier);
-		}
+		moveVertexToFrontier(instance, adjVertexId, uncoloredUnlinked,
+				numLinksToFrontier);
 	}
 }
 
