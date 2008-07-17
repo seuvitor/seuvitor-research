@@ -8,3 +8,14 @@ Here we present an overview of the coloring algorithms implemented in this resea
 {{{
 svn checkout http://seuvitor-research.googlecode.com/svn/trunk/ seuvitor-research -read-only
 }}}
+
+==Constructive algorithms==
+
+===DSATUR===
+===RLF===
+
+==Local improvement algorithms==
+===TABUCOL===
+
+==Comparison of implemented algorithms==
+At the [ColoringAlgorithmsComparison comparison section], we summarize the results obtained by the implemented algorithms. This section will be updated as more algorithms are implemented. The tests are performed on a set of [ColoringInstances benchmark instances].
