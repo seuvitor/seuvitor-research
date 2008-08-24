@@ -22,12 +22,15 @@ struct Solution
     int* coloring;
     
 	Solution(Instance* instance);
+	Solution(const Solution& solution);
 	~Solution();
 
     int numViolations();
     int k();
     
     void print(std::ostream& out);
+    
+    Solution& operator=(const Solution& solution);
 };
 
 #endif /*COLORING_H_*/
