@@ -97,6 +97,11 @@ Solution::Solution(Instance* instance) :
     for (int i = 0; i < instance->nvertices; ++i) coloring[i] = -1;
 }
 
+Solution::Solution(const Solution& solution)
+{
+    (*this) = solution;
+}
+
 Solution::~Solution()
 {
     if (coloring)
@@ -154,4 +159,16 @@ void Solution::print(std::ostream& out)
     	out << coloring[i] << ", ";
     }
     out << std::endl;
+}
+
+Solution& Solution::operator=(const Solution& solution)
+{
+    instance = solution.instance;
+    maxColor = solution.maxColor;
+    coloring = new int[instance->nvertices];
+    for (int i = 0; i < instance->nvertices; ++i)
+    {
+        coloring[i] = solution.coloring[i];
+    }
+    return (*this);
 }
