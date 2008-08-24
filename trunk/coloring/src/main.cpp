@@ -7,6 +7,7 @@
 #include "coloring.h"
 #include "dsatur.h"
 #include "rlf.h"
+#include "ts.h"
 
 int main(int argc, char** argv) {
 
@@ -35,6 +36,10 @@ int main(int argc, char** argv) {
     else if (algorithmName.compare("rlf") == 0)
     {
 	    rlf_constructSolution(instance, solution);
+    }
+    else if (algorithmName.compare("ts") == 0)
+    {
+	    ts_constructSolution(instance, solution);
     }
     
     time_t elapsedTime = time(NULL) - start;
