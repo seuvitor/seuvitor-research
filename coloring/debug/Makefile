@@ -28,4 +28,4 @@ clean:
 rebuild: clean all
 
 dist: clean
-	tar -c -z -f ./../dist/$(PROG)_$(TIMESTAMP).tar.gz -C ./../.. coloring/src coloring/debug coloring/instances
+	tar -c -z --exclude=.svn -f ./../dist/$(PROG)_$(TIMESTAMP).tar.gz -C ./../.. coloring/src coloring/debug coloring/instances coloring/reports
