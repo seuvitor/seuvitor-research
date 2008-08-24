@@ -38,8 +38,9 @@ int main(int argc, char** argv) {
     }
     
     time_t elapsedTime = time(NULL) - start;
-
-    if (solution->isFeasible())
+    
+    int numViolations = solution->numViolations();
+    if (numViolations == 0)
     {
         std::cout << fileName.substr(0, fileName.size() - 4) << "\t"
         		<< instance->nvertices << "\t"
@@ -50,7 +51,8 @@ int main(int argc, char** argv) {
     else
     {
         std::cout << fileName.substr(0, fileName.size() - 4)
-        		<< " Feasible solution not found" << std::endl;
+        		<< " Feasible solution not found. "
+                << "(" << numViolations << " violations)" << std::endl;
     }
     
     in.close();

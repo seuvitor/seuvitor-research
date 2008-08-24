@@ -111,18 +111,17 @@ int Solution::k()
 	return uniqueColors.size();
 }
 
-bool Solution::isFeasible()
+int Solution::numViolations()
 {
-	bool violationFound = false;
+    int violationCount = 0;
 	
-	for (int u = 0; u < instance->nvertices && !violationFound; ++u)
+	for (int u = 0; u < instance->nvertices; ++u)
 	{
 		// Check whether all vertices are colored
 		int uColor = coloring[u];
 		if (uColor == -1)
 		{
-			violationFound = true;
-			break;
+			violationCount++;
 		}
 		
         // Gets adjacency of vertex u
@@ -133,16 +132,18 @@ bool Solution::isFeasible()
 		{
             // Check whether there are conflicts between adjacent vertices
 			int v = *it;
-			int vColor = coloring[v];
-			if (uColor == vColor)
-			{
-				violationFound = true;
-				break;
-			}
+            if (u < v)
+            {
+                int vColor = coloring[v];
+                if (uColor == vColor)
+                {
+                    violationCount++;
+                }
+            }
 		}
 	}
 
-	return !violationFound;
+	return violationCount;
 }
 
 void Solution::print(std::ostream& out)

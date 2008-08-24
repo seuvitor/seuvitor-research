@@ -24,7 +24,7 @@ struct Solution
 	Solution(Instance* instance);
 	~Solution();
 
-    bool isFeasible();
+    int numViolations();
     int k();
     
     void print(std::ostream& out);
