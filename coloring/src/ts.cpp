@@ -56,6 +56,52 @@ int calculateValue(Instance* instance, Solution* solution)
     return value;
 }
 
+void chooseBestMove(const Solution* solution, char** countAdjColors,
+        const std::set<int>& conflictingVertices, const int diffToBestValue,
+        std::list<std::pair<int, int> >& tabuList,
+        std::pair<int, int>& bestMove, int& bestMoveDelta)
+{
+    std::pair<int, int> move;
+    for (std::set<int>::iterator vertexIt = conflictingVertices.begin(); vertexIt != conflictingVertices.end(); ++vertexIt)
+    {
+        int u = *vertexIt;
+        int currentColor = solution->coloring[u];
+        int currentConflicts = countAdjColors[u][currentColor];
+        for (int newColor = 0; newColor < K; ++newColor)
+        {
+            if (newColor == currentColor) continue;
+            move = std::make_pair(u, newColor);
+            int newConflicts = countAdjColors[u][newColor];
+            int delta = newConflicts - currentConflicts;
+            
+            // If the neighbour solution is better than the current, move to it
+            if (delta < 0)
+            {
+                // Ignore if this move is tabu and the neighbor solution
+                // doesn't represent a global improvement
+                bool isTabu = (std::find(tabuList.begin(), tabuList.end(), move) != tabuList.end());
+                if (isTabu && (diffToBestValue + delta >= 0))
+                    continue;
+                
+                bestMove = move;
+                bestMoveDelta = delta;
+                break;
+            }                
+            // Otherwise, keep looking for the best neighbour
+            else if (bestMove.first == -1 || delta < bestMoveDelta)
+            {
+                // Ignore if this move is tabu
+                bool isTabu = (std::find(tabuList.begin(), tabuList.end(), move) != tabuList.end());
+                if (isTabu) continue;
+                
+                bestMove = move;
+                bestMoveDelta = delta;
+            }
+        }
+    }
+
+}
+
 void applyMove(Solution* solution, char** countAdjColors,
         std::set<int>& conflictingVertices, std::pair<int, int>& move)
 {
@@ -127,45 +173,8 @@ void ts_constructSolution(Instance* instance, Solution* solution)
     {
         std::pair<int, int> bestMove = std::make_pair(-1, -1);
         int bestMoveDelta = -1;
-        
-        std::pair<int, int> move;
-        for (std::set<int>::iterator vertexIt = conflictingVertices.begin(); vertexIt != conflictingVertices.end(); ++vertexIt)
-        {
-            int u = *vertexIt;
-            int currentColor = currentSolution.coloring[u];
-            int currentConflicts = countAdjColors[u][currentColor];
-            for (int newColor = 0; newColor < K; ++newColor)
-            {
-                if (newColor == currentColor) continue;
-                move = std::make_pair(u, newColor);
-                int newConflicts = countAdjColors[u][newColor];
-                int delta = newConflicts - currentConflicts;
-                
-                // If the neighbour solution is better than the current, move to it
-                if (delta < 0)
-                {
-                    // Ignore if this move is tabu and the neighbor solution
-                    // doesn't represent a global improvement
-                    bool isTabu = (std::find(tabuList.begin(), tabuList.end(), move) != tabuList.end());
-                    if (isTabu && (diffToBestValue + delta >= 0))
-                        continue;
-                    
-                    bestMove = move;
-                    bestMoveDelta = delta;
-                    break;
-                }                
-                // Otherwise, keep looking for the best neighbour
-                else if (bestMove.first == -1 || delta < bestMoveDelta)
-                {
-                    // Ignore if this move is tabu
-                    bool isTabu = (std::find(tabuList.begin(), tabuList.end(), move) != tabuList.end());
-                    if (isTabu) continue;
-                    
-                    bestMove = move;
-                    bestMoveDelta = delta;
-                }
-            }
-        }
+        chooseBestMove(&currentSolution, countAdjColors, conflictingVertices,
+                diffToBestValue, tabuList, bestMove, bestMoveDelta);
         
         // Append to tabu list and move, if any non-tabu movement was available
         if (bestMove.first != -1)
