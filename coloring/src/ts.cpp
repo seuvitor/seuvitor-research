@@ -7,6 +7,42 @@
 
 #define K 16
 
+void resetCountAdjColors(const Solution& solution, char** countAdjColors)
+{
+    // Clear counts
+    for (int i = 0; i < solution.instance->nvertices; ++i)
+        std::fill(countAdjColors[i], (countAdjColors[i] + K), 0);
+    
+    // Increment color count for each ocurrence of a color in the adjacency
+    for (int u = 0; u < solution.instance->nvertices; ++u)
+    {
+        int color = solution.coloring[u];
+        
+        // Get adjacency of vertex u
+        int* adj = solution.instance->gamma[u];
+        
+        // Iteration starts on index 1 and ends adj[0] indices after the start
+        for (int *it = (adj + 1), *end = (it + adj[0]); it != end; ++it)
+        {
+            int v = *it;
+            countAdjColors[v][color] += 1;
+        }
+    }
+}
+
+void resetConflictingVertices(const Solution& solution, char** countAdjColors,
+        std::set<int>& conflictingVertices)
+{
+    conflictingVertices.clear();
+    for (int u = 0; u < solution.instance->nvertices; ++u)
+    {
+        if (countAdjColors[u][solution.coloring[u]] != 0)
+        {
+            conflictingVertices.insert(u);
+        }
+    }
+}
+
 void generateRandomSolution(Solution& solution, char** countAdjColors, std::set<int>& conflictingVertices)
 {
     for (int u = 0; u < solution.instance->nvertices; ++u)
@@ -219,6 +255,10 @@ void ts_constructSolution(Instance* instance, Solution* solution)
     Solution tabuSolution(instance);
     generateRandomSolution(tabuSolution, countAdjColors, conflictingVertices);
 
+    // Reset data structures after changing the solution
+    resetCountAdjColors(tabuSolution, countAdjColors);
+    resetConflictingVertices(tabuSolution, countAdjColors, conflictingVertices);
+        
     // Perform tabu search to improve the current solution
     tabuSearch(tabuSolution, countAdjColors, conflictingVertices);
         
