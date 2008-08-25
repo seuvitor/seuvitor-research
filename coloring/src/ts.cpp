@@ -99,14 +99,21 @@ void chooseBestMove(const Solution& solution, char** countAdjColors,
         const std::list<std::pair<int, int> >& tabuList, const int k,
         std::pair<int, int>& bestMove, int& bestMoveDelta)
 {
+    std::vector<int> vertices(conflictingVertices.begin(), conflictingVertices.end());
+    std::random_shuffle(vertices.begin(), vertices.end());
+
     std::pair<int, int> move;
-    for (std::set<int>::iterator vertexIt = conflictingVertices.begin(); vertexIt != conflictingVertices.end(); ++vertexIt)
+    for (std::vector<int>::iterator vertexIt = vertices.begin(); vertexIt != vertices.end(); ++vertexIt)
     {
         int u = *vertexIt;
         int currentColor = solution.coloring[u];
         int currentConflicts = countAdjColors[u][currentColor];
-        for (int newColor = 0; newColor < k; ++newColor)
+        
+        int randomJump = rand();
+        for (int i = 0; i < k; ++i)
         {
+            int newColor = (i + randomJump) % k;
+            
             if (newColor == currentColor) continue;
             move = std::make_pair(u, newColor);
             int newConflicts = countAdjColors[u][newColor];
