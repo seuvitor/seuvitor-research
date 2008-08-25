@@ -1,17 +1,18 @@
 #include "ts.h"
+#include "dsatur.h"
 #include <cstdlib>
 #include <utility>
+#include <vector>
 #include <list>
 #include <set>
 #include <algorithm>
 
-#define K 16
-
-void resetCountAdjColors(const Solution& solution, char** countAdjColors)
+void resetCountAdjColors(const Solution& solution, char** countAdjColors,
+        const int k)
 {
     // Clear counts
     for (int i = 0; i < solution.instance->nvertices; ++i)
-        std::fill(countAdjColors[i], (countAdjColors[i] + K), 0);
+        std::fill(countAdjColors[i], (countAdjColors[i] + k), 0);
     
     // Increment color count for each ocurrence of a color in the adjacency
     for (int u = 0; u < solution.instance->nvertices; ++u)
@@ -43,29 +44,30 @@ void resetConflictingVertices(const Solution& solution, char** countAdjColors,
     }
 }
 
-void generateRandomSolution(Solution& solution, char** countAdjColors, std::set<int>& conflictingVertices)
+void decrementK(Solution& solution)
 {
+    int k = solution.k();
+    // Chose biggest color class to erase
+    std::vector<int> colorCount(k, 0);
     for (int u = 0; u < solution.instance->nvertices; ++u)
     {
-        int color = rand() % K;
-        solution.coloring[u] = color;
-
-        // Gets adjacency of vertex u
-        int* adj = solution.instance->gamma[u];
-        
-        // Iteration starts on index 1 and ends adj[0] indices after the start
-        for (int *it = (adj + 1), *end = (it + adj[0]); it != end; ++it)
-        {
-            int v = *it;
-            countAdjColors[v][color] += 1;
-        }
+        colorCount[solution.coloring[u]]++;
     }
+    int biggestColorClass = std::max_element(colorCount.begin(), colorCount.end()) - colorCount.begin();
     
+    // Update colors of vertices
     for (int u = 0; u < solution.instance->nvertices; ++u)
     {
-        if (countAdjColors[u][solution.coloring[u]] != 0)
+        if (solution.coloring[u] == biggestColorClass)
         {
-            conflictingVertices.insert(u);
+            // Distribute vertices of the biggest color class randomly
+            solution.coloring[u] = rand() % (k - 1);
+        }
+        else if (solution.coloring[u] == (k - 1))
+        {
+            // The color class with the last index will now have the index
+            // left by the removal of the biggest color class
+            solution.coloring[u] = biggestColorClass;
         }
     }
 }
@@ -94,7 +96,7 @@ int calculateValue(const Solution& solution)
 
 void chooseBestMove(const Solution& solution, char** countAdjColors,
         const std::set<int>& conflictingVertices, const int diffToBestValue,
-        const std::list<std::pair<int, int> >& tabuList,
+        const std::list<std::pair<int, int> >& tabuList, const int k,
         std::pair<int, int>& bestMove, int& bestMoveDelta)
 {
     std::pair<int, int> move;
@@ -103,7 +105,7 @@ void chooseBestMove(const Solution& solution, char** countAdjColors,
         int u = *vertexIt;
         int currentColor = solution.coloring[u];
         int currentConflicts = countAdjColors[u][currentColor];
-        for (int newColor = 0; newColor < K; ++newColor)
+        for (int newColor = 0; newColor < k; ++newColor)
         {
             if (newColor == currentColor) continue;
             move = std::make_pair(u, newColor);
@@ -182,7 +184,7 @@ void applyMove(Solution& solution, char** countAdjColors,
 }
 
 void tabuSearch(Solution& bestSolution, char** countAdjColors,
-        std::set<int>& conflictingVertices)
+        std::set<int>& conflictingVertices, const int k)
 {
     int bestValue = calculateValue(bestSolution);
 
@@ -201,7 +203,7 @@ void tabuSearch(Solution& bestSolution, char** countAdjColors,
         std::pair<int, int> bestMove = std::make_pair(-1, -1);
         int bestMoveDelta = -1;
         chooseBestMove(currentSolution, countAdjColors, conflictingVertices,
-                diffToBestValue, tabuList, bestMove, bestMoveDelta);
+                diffToBestValue, tabuList, k, bestMove, bestMoveDelta);
         
         // Append to tabu list and move, if any non-tabu movement was available
         if (bestMove.first != -1)
@@ -212,7 +214,7 @@ void tabuSearch(Solution& bestSolution, char** countAdjColors,
         }
         
         // Remove least recent tabu
-        unsigned int tabuTenure = (conflictingVertices.size() * K) / 15;
+        unsigned int tabuTenure = (conflictingVertices.size() * k) / 15;
         int tabuExcess = tabuList.size() > tabuTenure;
         if (tabuExcess > 0)
         {
@@ -242,28 +244,48 @@ void tabuSearch(Solution& bestSolution, char** countAdjColors,
 
 void ts_constructSolution(Instance* instance, Solution* solution)
 {
+    // Create first feasible solution using DSATUR heuristic.
+    Solution bestFeasibleSolution(instance);
+    dsatur_constructSolution(instance, &bestFeasibleSolution);
+    int k = bestFeasibleSolution.k();
+    
     // Setup data structures
     std::set<int> conflictingVertices;
     char** countAdjColors = new char*[instance->nvertices];
     for (int i = 0; i < instance->nvertices; ++i)
     {
-        countAdjColors[i] = new char[K];
-        std::fill(countAdjColors[i], (countAdjColors[i] + K), 0);
+        countAdjColors[i] = new char[k];
+        std::fill(countAdjColors[i], (countAdjColors[i] + k), 0);
     }
     
-    // Create a randomized initial solution
-    Solution tabuSolution(instance);
-    generateRandomSolution(tabuSolution, countAdjColors, conflictingVertices);
+    bool bestFeasibleSolutionImproving = true;
+    while (bestFeasibleSolutionImproving)
+    {
+        // Get a feasible solution and decrement k by removing one color class
+        Solution tabuSolution = bestFeasibleSolution;
+        decrementK(tabuSolution);
+        k = tabuSolution.k();
 
-    // Reset data structures after changing the solution
-    resetCountAdjColors(tabuSolution, countAdjColors);
-    resetConflictingVertices(tabuSolution, countAdjColors, conflictingVertices);
+        // Reset data structures after changing the solution
+        resetCountAdjColors(tabuSolution, countAdjColors, k);
+        resetConflictingVertices(tabuSolution, countAdjColors, conflictingVertices);
         
-    // Perform tabu search to improve the current solution
-    tabuSearch(tabuSolution, countAdjColors, conflictingVertices);
+        // Perform tabu search to improve the current solution
+        tabuSearch(tabuSolution, countAdjColors, conflictingVertices, k);
         
+        // Update best feasible solution, if a new feasible solution was found
+        if (tabuSolution.numViolations() == 0)
+        {
+            bestFeasibleSolution = tabuSolution;
+        }
+        else
+        {
+            bestFeasibleSolutionImproving = false;
+        }
+    }
+    
     for (int u = 0; u < instance->nvertices; ++u)
     {
-        solution->coloring[u] = tabuSolution.coloring[u];
+        solution->coloring[u] = bestFeasibleSolution.coloring[u];
     }
 }
