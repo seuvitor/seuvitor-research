@@ -145,25 +145,16 @@ void applyMove(Solution& solution, char** countAdjColors,
     }
 }
 
-void ts_constructSolution(Instance* instance, Solution* solution)
+void tabuSearch(Solution& bestSolution, char** countAdjColors,
+        std::set<int>& conflictingVertices)
 {
-    std::set<int> conflictingVertices;
-    char** countAdjColors = new char*[instance->nvertices];
-    for (int i = 0; i < instance->nvertices; ++i)
-    {
-        countAdjColors[i] = new char[K];
-        std::fill(countAdjColors[i], (countAdjColors[i] + K), 0);
-    }
-    
-    Solution currentSolution(instance);
-    generateRandomSolution(currentSolution, countAdjColors, conflictingVertices);
-    int currentValue = calculateValue(currentSolution);
-    
-    Solution bestSolution = currentSolution;
-    int bestValue = currentValue;
+    int bestValue = calculateValue(bestSolution);
+
+    Solution currentSolution = bestSolution;
+    int currentValue = bestValue;
     int diffToBestValue = 0;
     
-    int maxIt = instance->nvertices * 5000;
+    int maxIt = currentSolution.instance->nvertices * 5000;
     int it = 0;
     int lastImprovementIt = 0;
     
@@ -211,9 +202,28 @@ void ts_constructSolution(Instance* instance, Solution* solution)
         // Increment iteration
         it += 1;
     }
+}
+
+void ts_constructSolution(Instance* instance, Solution* solution)
+{
+    // Setup data structures
+    std::set<int> conflictingVertices;
+    char** countAdjColors = new char*[instance->nvertices];
+    for (int i = 0; i < instance->nvertices; ++i)
+    {
+        countAdjColors[i] = new char[K];
+        std::fill(countAdjColors[i], (countAdjColors[i] + K), 0);
+    }
     
+    // Create a randomized initial solution
+    Solution tabuSolution(instance);
+    generateRandomSolution(tabuSolution, countAdjColors, conflictingVertices);
+
+    // Perform tabu search to improve the current solution
+    tabuSearch(tabuSolution, countAdjColors, conflictingVertices);
+        
     for (int u = 0; u < instance->nvertices; ++u)
     {
-        solution->coloring[u] = bestSolution.coloring[u];
+        solution->coloring[u] = tabuSolution.coloring[u];
     }
 }
