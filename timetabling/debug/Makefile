@@ -13,10 +13,10 @@ $(PROG): $(OBJS)
 main.o: $(SRC)/main.cpp $(SRC)/timetabling.h $(SRC)/bb.h
 	$(CC) $(CFLAGS) $(SRC)/main.cpp
 
-timetabling.o: $(SRC)/timetabling.cpp
+timetabling.o: $(SRC)/timetabling.cpp $(SRC)/timetabling.h
 	$(CC) $(CFLAGS) $(SRC)/timetabling.cpp
 
-bb.o: $(SRC)/bb.cpp $(SRC)/timetabling.h
+bb.o: $(SRC)/bb.cpp $(SRC)/bb.h $(SRC)/timetabling.h
 	$(CC) $(CFLAGS) $(SRC)/bb.cpp
 
 clean:
