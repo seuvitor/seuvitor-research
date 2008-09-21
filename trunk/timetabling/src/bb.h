@@ -3,27 +3,29 @@
 
 #include "timetabling.h"
 
-#define MAX_NUM_EVENTS 200
-#define MAX_NUM_ROOMS 10
+#define MAX_NUM_EVENTS 400
+#define MAX_NUM_ROOMS 20
 
 struct TimeslotSet
 {
-    int onesCount;
+    int size;
+#ifdef USE_BITSET    
     unsigned long long int bits;
+#else
+    bool available[NUM_TIMESLOTS];
+#endif
     
-    void fulfill();
-    void clear();
-    void discardTimeslot(int timeslot);
-    void discardBeforeTimeslot(int timeslot);
-    void discardAfterTimeslot(int timeslot);
-    
-    int size();
-    bool empty();
+    void discardTimeslot(int timeslot, int (*candidatesCount)[NUM_TIMESLOTS]);
     void toVector(std::vector<int>& vector);
-    void print(std::ostream& out);
     
     TimeslotSet()
     {
+#ifdef USE_BITSET
+        bits = ~(~(0ULL) << NUM_TIMESLOTS);
+#else
+        std::fill(available, available + NUM_TIMESLOTS, true);
+#endif
+        size = NUM_TIMESLOTS;
     }
     
     ~TimeslotSet()
@@ -47,8 +49,9 @@ struct EventRoomAllocation
     
     EventRoomAllocation()
     {
-        memset(matchingEvent, -1, sizeof(matchingEvent));
-        memset(matchingRoom, -1, sizeof(matchingRoom));
+        std::fill(matchingEvent, matchingEvent + MAX_NUM_EVENTS, -1);
+        std::fill(matchingRoom, matchingRoom + MAX_NUM_ROOMS, -1);
+        std::fill(visitedRoom, visitedRoom + MAX_NUM_ROOMS, false);
         usedRooms = 0;
     }
 };
@@ -57,6 +60,7 @@ struct State
 {
     int coloring[MAX_NUM_EVENTS];
     TimeslotSet C[MAX_NUM_EVENTS];
+    int candidatesCount[NUM_TIMESLOTS];
     EventRoomAllocation roomAllocation[NUM_TIMESLOTS];
     bool visitable;
     
