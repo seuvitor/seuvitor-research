@@ -13,65 +13,33 @@
 int nevents;
 int nrooms;
 
-void TimeslotSet::fulfill()
+void TimeslotSet::discardTimeslot(int timeslot, int(*candidatesCount)[NUM_TIMESLOTS])
 {
-    onesCount = NUM_TIMESLOTS;
-    bits = ~(~(0ULL) << NUM_TIMESLOTS);
-}
-
-void TimeslotSet::clear()
-{
-    bits = 0ULL;
-    onesCount = 0;
-}
-
-void TimeslotSet::discardTimeslot(int timeslot)
-{
+#ifdef USE_BITSET
     unsigned long long int bitstring = bits;
     bits = bitstring & (~(1ULL << timeslot));
     if (bits != bitstring)
     {
-        onesCount -= 1;
+        size -= 1;
+        (*candidatesCount)[timeslot] -= 1;
     }
-}
-
-void TimeslotSet::discardBeforeTimeslot(int timeslot)
-{
-    bits &= (~(0ULL) << (timeslot + 1));
-    onesCount = -1;
-}
-
-void TimeslotSet::discardAfterTimeslot(int timeslot)
-{
-    bits &= ~(~(0ULL) << timeslot);
-    onesCount = -1;
-}
-
-int TimeslotSet::size()
-{
-    if (onesCount != -1)
+#else
+    if (available[timeslot])
     {
-        return onesCount;
+        available[timeslot] = false;
+        size -= 1;
+        (*candidatesCount)[timeslot] -= 1;
+        if ((*candidatesCount)[timeslot] < 0)
+        {
+            throw std::domain_error ("TimeslotSet::discardTimeslot: candidatesCount[t] < 0.");
+        }
     }
-    
-    onesCount = 0;
-    unsigned long long int bitstring = bits;
-    while (bitstring != 0ULL)
-    {
-        onesCount += (bitstring & 1ULL);
-        bitstring = (bitstring >> 1);
-    }
-    
-    return onesCount;
-}
-
-bool TimeslotSet::empty()
-{
-    return (bits == 0ULL);
+#endif
 }
 
 void TimeslotSet::toVector(std::vector<int>& vector)
 {
+#ifdef USE_BITSET
     for (int t = 0; t < NUM_TIMESLOTS; ++t)
     {
         if (((bits >> t) & 1) == 1)
@@ -79,23 +47,25 @@ void TimeslotSet::toVector(std::vector<int>& vector)
             vector.push_back(t);
         }
     }
-}
-
-void TimeslotSet::print(std::ostream& out)
-{
-    out << "bits:" << std::endl;
-    for (int t = (NUM_TIMESLOTS - 1); t >= 0; --t)
+#else
+    for (int t = 0; t < NUM_TIMESLOTS; ++t)
     {
-        out << ((bits >> t) & 1ULL);
+        if (available[t])
+        {
+            vector.push_back(t);
+        }
     }
-    out << std::endl;
+#endif
 }
 
 TimeslotSet& TimeslotSet::operator=(const TimeslotSet& timeslotSet)
 {
+    size = timeslotSet.size;
+#ifdef USE_BITSET    
     bits = timeslotSet.bits;
-    onesCount = timeslotSet.onesCount;
-    
+#else
+    std::memcpy(available, timeslotSet.available, sizeof(timeslotSet.available));
+#endif
     return (*this);
 }
 
@@ -103,6 +73,7 @@ State& State::operator=(const State& state)
 {
     std::memcpy(coloring, state.coloring, sizeof(int) * nevents);
     std::memcpy(C, state.C, sizeof(TimeslotSet) * nevents);
+    std::memcpy(candidatesCount, state.candidatesCount, sizeof(state.candidatesCount));
     std::memcpy(roomAllocation, state.roomAllocation, sizeof(EventRoomAllocation) * NUM_TIMESLOTS);
     visitable = state.visitable;
     return (*this);
@@ -117,7 +88,7 @@ int selectEvent(Instance* instance, State& state)
     {
         if (state.coloring[e] != -1) continue;
         
-        int numCandidates = state.C[e].size();
+        int numCandidates = state.C[e].size;
         int degree = instance->gamma[e].size();
         
         if (bestEvent == -1 || numCandidates < bestNumCandidates ||
@@ -135,12 +106,78 @@ int selectTimeslot(Instance* instance, State& state, int event)
 {
     std::vector<int> candidates;
     state.C[event].toVector(candidates);
-    int idx = rand() % candidates.size();
-    return candidates[idx];
+    
+    int bestTimeslot = -1;
+    int bestCandidateCount = -1;
+    int bestUsedRooms = -1;
+    int countEqual = 0;
+    for(unsigned int i = 0; i < candidates.size(); ++i)
+    {
+        int t = candidates[i];
+        int candidateCount = state.candidatesCount[t];
+        int usedRooms = state.roomAllocation[t].usedRooms;
+        
+        if (bestTimeslot == -1 || candidateCount < bestCandidateCount ||
+                candidateCount == bestCandidateCount && usedRooms > bestUsedRooms)
+        {
+            bestTimeslot = t;
+            bestCandidateCount = candidateCount;
+            bestUsedRooms = usedRooms;
+            countEqual = 1;
+        }
+        else if (candidateCount == bestCandidateCount && usedRooms == bestUsedRooms)
+        {
+            countEqual += 1;
+            
+            // With probability 1/countEqual, prefer this equivalent timeslot
+            if (rand() % 1000 <= 1000 / countEqual)
+            {
+                bestTimeslot = t;
+                bestCandidateCount = candidateCount;
+                bestUsedRooms = usedRooms;
+            }
+        }
+    }
+    return bestTimeslot;
 }
 
 bool updateCandidateTimeslots(Instance* instance, State& state, int event, int timeslot)
 {
+    // If there are no remaining free rooms, discard timeslot from all events
+    if (state.roomAllocation[timeslot].usedRooms >= nrooms)
+    {
+        for (int e = 0; e < nevents; ++e)
+        {
+            if (state.coloring[e] != -1)
+            {
+                continue;
+            }
+            state.C[e].discardTimeslot(timeslot, &state.candidatesCount);
+            if (state.C[e].size == 0)
+            {
+                return true;
+            }
+        }
+    }
+    else
+    {
+        // Otherwise, discard timeslot for all events that conflict with event
+        for (std::set<int>::iterator it = instance->gamma[event].begin(); it != instance->gamma[event].end(); ++it)
+        {
+            int e = *it;
+            if (state.coloring[e] != -1)
+            {
+                continue;
+            }
+            
+            state.C[e].discardTimeslot(timeslot, &state.candidatesCount);
+            if (state.C[e].size == 0)
+            {
+                return true;
+            }
+        }
+    }
+    
     // For all events that must occur after event, remove candidate timeslots
 	// that cannot be used after allocating event to timeslot
     for (std::set<int>::iterator it = instance->eventsAfter[event].begin(); it != instance->eventsAfter[event].end(); ++it)
@@ -150,8 +187,11 @@ bool updateCandidateTimeslots(Instance* instance, State& state, int event, int t
         {
             continue;
         }
-        state.C[e].discardBeforeTimeslot(timeslot);
-        if (state.C[e].empty())
+        for (int t = 0; t <= timeslot; ++t)
+        {
+            state.C[e].discardTimeslot(t, &state.candidatesCount);
+        }
+        if (state.C[e].size == 0)
         {
             return true;
         }
@@ -166,52 +206,22 @@ bool updateCandidateTimeslots(Instance* instance, State& state, int event, int t
         {
             continue;
         }
-        state.C[e].discardAfterTimeslot(timeslot);
-        if (state.C[e].empty())
+        for (int t = timeslot; t < NUM_TIMESLOTS; ++t)
+        {
+            state.C[e].discardTimeslot(t, &state.candidatesCount);
+        }
+        if (state.C[e].size == 0)
         {
             return true;
         }
     }
-    
-    // For all events that conflict with event, remove candidate timeslots that
-    // equal to timeslot
-    for (std::set<int>::iterator it = instance->gamma[event].begin(); it != instance->gamma[event].end(); ++it)
-    {
-        int e = *it;
-        if (state.coloring[e] != -1)
-        {
-            continue;
-        }
-        
-        state.C[e].discardTimeslot(timeslot);
-        if (state.C[e].empty())
-        {
-            return true;
-        }
-    }
-    
-    // TODO: Check need for this code
-    /*
-    for (int e = 0; e < nevents; ++e)
-    {
-        if (state.coloring[e] != -1)
-        {
-            continue;
-        }
-        state.C[e].discardTimeslot(timeslot);
-        if (state.C[e].empty())
-        {
-            return true;
-        }
-    }
-    */
     
     return false;
 }
 
 bool augmenting(Instance* instance, EventRoomAllocation *t, int event)
 {
-    for (int room = 0; room < MAX_NUM_ROOMS; room++)
+    for (int room = 0; room < nrooms; room++)
     {
         bool candidateRoom = instance->candidateRooms[event].find(room)
                 != instance->candidateRooms[event].end();
@@ -232,9 +242,9 @@ bool augmenting(Instance* instance, EventRoomAllocation *t, int event)
 
 bool insertIfFeasible(Instance* instance, State& state, int event, int timeslot)
 {
-    // TODO: Calculate feasibility of insertion using maximum bipartite matching
+    // Calculate feasibility of insertion using maximum bipartite matching
     EventRoomAllocation *t = &(state.roomAllocation[timeslot]);
-    for (int r = 0; r < MAX_NUM_ROOMS; r++)
+    for (int r = 0; r < nrooms; r++)
     {
         t->visitedRoom[r] = false;
     }
@@ -250,7 +260,6 @@ bool insertIfFeasible(Instance* instance, State& state, int event, int timeslot)
 
 void bb_constructSolution(Instance* instance, Solution* solution)
 {
-    std::cout << "bb_constructSolution" << std::endl;
     nevents = instance->nevents;
     nrooms = instance->nrooms;
     
@@ -263,9 +272,7 @@ void bb_constructSolution(Instance* instance, Solution* solution)
         throw std::invalid_argument("The number of rooms is larger than MAX_NUM_ROOMS.");
     }
     
-    solution->print(std::cout);
-    
-    State stateStack[MAX_NUM_EVENTS + 1];
+    State* stateStack = new State[MAX_NUM_EVENTS + 1];
     
     int level = 0;
 
@@ -278,23 +285,26 @@ void bb_constructSolution(Instance* instance, Solution* solution)
     // C is the set of candidate timeslots for each event
     for (int e = 0; e < nevents; ++e)
     {
-        stateStack[level].C[e].fulfill();
+        std::fill(stateStack[level].candidatesCount,
+                stateStack[level].candidatesCount + NUM_TIMESLOTS, nevents);
+    }
+    
+    for (int e = 0; e < nevents; ++e)
+    {
         for (int t = 0; t < NUM_TIMESLOTS; ++t)
         {
             // If timeslot is not a candidate for this event
             if (instance->candidateTimeslots[e].find(t) == instance->candidateTimeslots[e].end())
             {
-                stateStack[level].C[e].discardTimeslot(t);
+                stateStack[level].C[e].discardTimeslot(t, &stateStack[level].candidatesCount);
             }
         }
     }
     
-    std::cout << "> Starting branch-and-bound..." << std::endl;
+    std::clog << "> Starting branch-and-bound..." << std::endl;
     int maxLevel = 0;
     int it = 0;
-    int maxIt = 1000000;
-    
-    std::vector<int> numBacktracks(nevents, 0);
+    int maxIt = 100000000;
     
     while (level < nevents && it < maxIt)
     {
@@ -303,19 +313,19 @@ void bb_constructSolution(Instance* instance, Solution* solution)
         if (level > maxLevel)
         {
             maxLevel = level;
-            std::cout << "maxLevel " << maxLevel << std::endl;
         }
+        if (!(it % 10000)) std::clog << "\rcurrentLevel=" << level << ", maxLevel=" << maxLevel << "              ";
         
         int event = selectEvent(instance, stateStack[level]);
         int timeslot = selectTimeslot(instance, stateStack[level], event);
         
-        stateStack[level].C[event].discardTimeslot(timeslot);
+        stateStack[level].C[event].discardTimeslot(timeslot, &stateStack[level].candidatesCount);
         
         // Copy current state data to one stack level higher
         stateStack[level + 1] = stateStack[level];
         
         // Set current state as not visitable, if this event has no candidates
-        if (stateStack[level].C[event].empty())
+        if (stateStack[level].C[event].size == 0)
         {
             stateStack[level].visitable = false;
         }
@@ -329,7 +339,12 @@ void bb_constructSolution(Instance* instance, Solution* solution)
         
         if (!backtrack)
         {
-            stateStack[level].C[event].clear();
+            // Remove all candidates
+            for (int t = 0; t < NUM_TIMESLOTS; ++t)
+            {
+                stateStack[level].C[event].discardTimeslot(t,
+                        &stateStack[level].candidatesCount);
+            }
             stateStack[level].coloring[event] = timeslot;
             backtrack = updateCandidateTimeslots(instance, stateStack[level], event, timeslot);
         }
@@ -354,27 +369,24 @@ void bb_constructSolution(Instance* instance, Solution* solution)
             {
                 break;
             }
-            numBacktracks[level] += 1;
         }
         
         if (level == nevents)
         {
-            std::cout << "coloring found (it=" << it << "):" << std::endl;
             for (int e = 0; e < nevents; ++e)
             {
-                std::cout << stateStack[level].coloring[e] << " ";
+                solution->eventTimeslots[e] = stateStack[level].coloring[e];
                 for (int t = 0; t < NUM_TIMESLOTS; ++t)
                 {
                     int r = stateStack[level].roomAllocation[t].matchingEvent[e];
                     if (r != -1)
                     {
-                        std::cout << r;
+                        solution->eventRooms[e] = r;
                         break;
                     }
                 }
-                std::cout << std::endl;
             }
-            return;
+            break;
 
             // Backtrack if possible
             level -= 1;
@@ -395,14 +407,10 @@ void bb_constructSolution(Instance* instance, Solution* solution)
             {
                 break;
             }
-            numBacktracks[level] += 1;
         }
     }
+    std::clog << std::endl;
+
     
-    std::cout << "numBacktracks: ";
-    for (std::vector<int>::iterator it = numBacktracks.begin(); it != numBacktracks.end(); ++it)
-    {
-        std::cout << *it << ", ";
-    }
-    std::cout << std::endl;
+    delete[] stateStack;
 }
