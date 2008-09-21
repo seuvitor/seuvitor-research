@@ -119,6 +119,26 @@ Instance::Instance(std::istream& in)
         }
     }
     
+    // Look for pairs of events which have a single candidateRoom and set those
+    // as conflicting events
+    for (int e1 = 0; e1 < nevents; ++e1)
+    {
+        for (int e2 = 0; e2 < nevents; ++e2)
+        {
+            if (e1 < e2 && candidateRooms[e1].size() == 1
+                    && candidateRooms[e2].size() == 1)
+            {
+                int e1Room = *candidateRooms[e1].begin();
+                int e2Room = *candidateRooms[e2].begin();
+                if (e1Room == e2Room)
+                {
+                    gamma[e1].insert(e2);
+                    gamma[e2].insert(e1);
+                }
+            }
+        }
+    }
+    
     // Remove from candidate timeslots if a timeslot is not available
     for (int e = 0; e < nevents; ++e)
     {
@@ -129,13 +149,14 @@ Instance::Instance(std::istream& in)
             if (available == 0)
             {
                 candidateTimeslots[e].erase(t);
-            }            
+            }
         }
     }
     
     eventsAfter = std::vector<std::set<int> >(nevents, std::set<int>());
     eventsBefore = std::vector<std::set<int> >(nevents, std::set<int>());
     
+    // Set precedence relations
     for (int e1 = 0; e1 < nevents; ++e1)
     {
         for (int e2 = 0; e2 < nevents; ++e2)
@@ -144,8 +165,23 @@ Instance::Instance(std::istream& in)
             in >> preceeds;
             if (preceeds == 1)
             {
-                eventsAfter[e1].insert(e2);
-                eventsBefore[e2].insert(e1);
+                std::vector<int> stackAfterEvent1(1, e2);
+                while(stackAfterEvent1.size() > 0)
+                {
+                    int e = stackAfterEvent1.back();
+                    stackAfterEvent1.pop_back();
+                    
+                    eventsAfter[e1].insert(e);
+                    eventsBefore[e].insert(e1);
+
+                    // Also add to adjacency (conflict) list
+                    gamma[e1].insert(e);
+                    gamma[e].insert(e1);
+                    
+                    // Also look for transitive precedence relations
+                    std::copy(eventsAfter[e].begin(), eventsAfter[e].end(),
+                            std::back_inserter(stackAfterEvent1));
+                }
             }
         }
     }
