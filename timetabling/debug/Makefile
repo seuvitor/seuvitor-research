@@ -5,10 +5,13 @@ SRC = ../src
 OBJS = main.o timetabling.o bb.o
 TIMESTAMP = `date +%Y-%m-%d_%Hh%M`
 
-all: $(PROG)
+all: $(PROG) checkcinsln
+
+checkcinsln: $(SRC)/checkcinsln.cpp
+	$(CC) -O3 -o checkcinsln $(SRC)/checkcinsln.cpp
 
 $(PROG): $(OBJS)
-	$(CC) -O3 $(OBJS) -o $(PROG)
+	$(CC) -O3 -o $(PROG) $(OBJS)
 
 main.o: $(SRC)/main.cpp $(SRC)/timetabling.h $(SRC)/bb.h
 	$(CC) $(CFLAGS) $(SRC)/main.cpp
@@ -20,7 +23,7 @@ bb.o: $(SRC)/bb.cpp $(SRC)/bb.h $(SRC)/timetabling.h
 	$(CC) $(CFLAGS) $(SRC)/bb.cpp
 
 clean:
-	rm -f $(PROG) $(PROG).exe $(OBJS)
+	rm -f $(PROG) *.exe $(OBJS)
 
 rebuild: clean all
 
