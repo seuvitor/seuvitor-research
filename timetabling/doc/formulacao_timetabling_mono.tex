@@ -1,0 +1,71 @@
+\documentclass{article}
+
+\usepackage[brazil]{babel}
+\usepackage[latin1]{inputenc}
+
+\begin{document}
+
+\section{Entradas}
+\begin{itemize}
+\item Conjuntos $S$ de estudantes, $E$ de eventos, $T$ de períodos e $R$ de salas.
+\item $E^s$ são os eventos em que o estudante $s$ está matriculado.
+\item $S^e$ são os estudantes matriculados no evento $e$.
+\item $E^t$ são os eventos viáveis para o período $t$.
+\item $T^e$ são os períodos viáveis para o evento $e$.
+\item $E^r$ são os eventos viáveis para a sala $r$.
+\item $R^e$ são as salas viáveis para o evento $e$.
+\item $\gamma(t)$ são os 3 (ou menos) períodos consecutivos a partir de $t$.
+\item $\delta(t)$ são os 8 outros períodos no mesmo dia de $t$.
+\end{itemize}
+
+\section{Variáveis}
+\begin{itemize}
+\item $x_{etr} \in \{0,1\}$ evento $e$ é alocado ao período $t$ e à sala $r$.
+\item $o_{st} \in \{0,1\}$ estudante $s$ tem 3 eventos consecutivos a partir do período $t$.
+\item $w_{st} \in \{0,1\}$ estudante $s$ tem 1 evento no período $t$ que é o único do dia.
+\item $\alpha_{st} \in [0,2]$ variável de folga relacionada com $o_{st}$.
+\item $\beta_{st} \in [-8,0]$ variável de folga relacionada com $w_{st}$.
+\end{itemize}
+
+\section{Objetivo}
+O custo de uma solução é a soma das penalidades relacionadas com cada estudante. Para cada estudante, penalizamos:
+\begin{itemize}
+\item Cada alocação ao último período do dia
+\item Cada alocação a 3 períodos consecutivos
+\item Cada alocação a um único período do dia
+\end{itemize}
+\begin{equation}
+\min z = \sum_{s \in S}{ \left( \left( \sum_{e \in E^s}{ \sum_{t \in T^e \cap \{9, 18, 27, 36, 45\}}{ \sum_{r \in R^e}{ x_{etr} } } } \right) + \sum_{t \in T}{ o_{st} } + \sum_{t \in T}{ w_{st} } \right) }
+\end{equation}
+
+\section{Restrições}
+\begin{itemize}
+
+\item Todo evento $e$ deve ser alocado a um período $t \in T^e$ e sala $r \in R^e$.
+\begin{equation}
+\sum_{t \in T^e}{ \sum_{r \in R^e}{ x_{etr} } } \geq 1 \qquad \forall e \in E 
+\end{equation}
+
+\item Cada estudante $s$ pode ter no máximo 1 alocação para o período $t$.
+\begin{equation}
+\sum_{e \in E^s \cap E^t}{ \sum_{r \in R^e}{ x_{etr} } } \leq 1 \qquad \forall s \in S, t \in T
+\end{equation}
+
+\item No máximo um evento $e$ pode estar alocado a um período $t$ e sala $r$.
+\begin{equation}
+\sum_{e \in E^t \cap E^r}{ x_{etr} } \leq 1 \qquad \forall t \in T, r \in R
+\end{equation}
+           
+\item Se o estudante $s$ está alocado para os 3 períodos consecutivos $k \in \gamma(t)$, o lado esquerdo é 3, logo $o_{st} = 1$.
+\begin{equation}
+\sum_{k \in \gamma(t)}{ \sum_{e \in E^s \cap E^k}{ \sum_{r \in R^e}{ x_{ekr} } } } = o_{st} + \alpha_{st} \qquad \forall s \in S, t \in T
+\end{equation}
+           
+\item Se o estudante $s$ está alocado para o período $t$ e para nenhum outro período $k \in \delta(t)$ deste mesmo dia, o lado esquerdo é 1, logo $w_{st} = 1$.
+\begin{equation}
+\sum_{e \in E^s \cap E^t} \sum_{r \in R^e}{ x_{etr} } - \sum_{k \in \delta(t)} \sum_{e \in E^s \cap E^k} \sum_{r \in R^e}{ x_{ekr} } = w_{st} + \beta_{st} \qquad \forall s \in S, t \in T
+\end{equation}
+
+\end{itemize}
+
+\end{document}
