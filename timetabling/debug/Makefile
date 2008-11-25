@@ -2,7 +2,7 @@ PROG = timetabling
 CC = g++
 CFLAGS = -O3 -c -Wall -IC:/ILOG/CPLEX110/include
 SRC = ../src
-OBJS = main.o timetabling.o bb.o solver.o colrep.o rep.o graph.o
+OBJS = main.o timetabling.o bb.o solver.o colrep.o rep.o colmono.o mono.o graph.o
 TIMESTAMP = `date +%Y-%m-%d_%Hh%M`
 
 all: $(PROG) checkcinsln
@@ -13,7 +13,7 @@ checkcinsln: $(SRC)/checkcinsln.cpp
 $(PROG): $(OBJS)
 	$(CC) -O3 -o $(PROG) $(OBJS) -LC:/ILOG/CPLEX110/lib/x86_.net2005_8.0/stat_mda -lcplex110
 
-main.o: $(SRC)/main.cpp $(SRC)/timetabling.h $(SRC)/bb.h $(SRC)/solver.h $(SRC)/colrep.h $(SRC)/rep.h
+main.o: $(SRC)/main.cpp $(SRC)/timetabling.h $(SRC)/bb.h $(SRC)/solver.h $(SRC)/colrep.h $(SRC)/rep.h $(SRC)/colmono.h $(SRC)/mono.h
 	$(CC) $(CFLAGS) $(SRC)/main.cpp
 
 timetabling.o: $(SRC)/timetabling.cpp $(SRC)/timetabling.h
@@ -33,6 +33,12 @@ colrep.o: $(SRC)/colrep.cpp $(SRC)/colrep.h ${SRC}/solver.h ${SRC}/graph.h $(SRC
 	
 rep.o: $(SRC)/rep.cpp $(SRC)/rep.h ${SRC}/solver.h ${SRC}/graph.h $(SRC)/timetabling.h
 	$(CC) $(CFLAGS) $(SRC)/rep.cpp
+
+mono.o: $(SRC)/mono.cpp $(SRC)/mono.h ${SRC}/solver.h $(SRC)/timetabling.h
+	$(CC) $(CFLAGS) $(SRC)/mono.cpp
+
+colmono.o: $(SRC)/colmono.cpp $(SRC)/colmono.h ${SRC}/solver.h $(SRC)/timetabling.h
+	$(CC) $(CFLAGS) $(SRC)/colmono.cpp
 
 clean:
 	rm -f $(PROG) *.exe $(OBJS)
