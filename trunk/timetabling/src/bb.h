@@ -3,9 +3,6 @@
 
 #include "timetabling.h"
 
-#define MAX_NUM_EVENTS 400
-#define MAX_NUM_ROOMS 20
-
 struct TimeslotSet
 {
     int size;

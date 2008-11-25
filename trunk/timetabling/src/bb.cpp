@@ -223,8 +223,8 @@ bool augmenting(Instance* instance, EventRoomAllocation *t, int event)
 {
     for (int room = 0; room < nrooms; room++)
     {
-        bool candidateRoom = instance->candidateRooms[event].find(room)
-                != instance->candidateRooms[event].end();
+        bool candidateRoom = instance->eventRooms[event].find(room)
+                != instance->eventRooms[event].end();
         
         if (candidateRoom && !t->visitedRoom[room])
         {
@@ -294,7 +294,7 @@ void bb_constructSolution(Instance* instance, Solution* solution)
         for (int t = 0; t < NUM_TIMESLOTS; ++t)
         {
             // If timeslot is not a candidate for this event
-            if (instance->candidateTimeslots[e].find(t) == instance->candidateTimeslots[e].end())
+            if (instance->eventTimeslots[e].find(t) == instance->eventTimeslots[e].end())
             {
                 stateStack[level].C[e].discardTimeslot(t, &stateStack[level].candidatesCount);
             }

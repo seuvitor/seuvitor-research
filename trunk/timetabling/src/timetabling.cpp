@@ -21,9 +21,9 @@ Instance::Instance(std::istream& in)
     gamma = std::vector<std::set<int> >(nevents, std::set<int>());
     
     // Number of students attending to each event
-    std::vector<int> eventAttendance(nevents, 0);
+    eventAttendance = std::vector<int>(nevents, 0);
     
-    std::set<int> studentEvents;
+    studentEvents = std::vector<std::set<int> >(nstudents, std::set<int>());
     for (int s = 0; s < nstudents; ++s)
     {
         for (int e = 0; e < nevents; ++e)
@@ -33,14 +33,14 @@ Instance::Instance(std::istream& in)
             if (attends == 1)
             {
                 eventAttendance[e] += 1;
-                studentEvents.insert(e);
+                studentEvents[s].insert(e);
             }
         }
         
         // For each pair of events attended by a student, add conflict
-        for (std::set<int>::iterator it1 = studentEvents.begin(); it1 != studentEvents.end(); ++it1)
+        for (std::set<int>::iterator it1 = studentEvents[s].begin(); it1 != studentEvents[s].end(); ++it1)
         {
-            for (std::set<int>::iterator it2 = studentEvents.begin(); it2 != studentEvents.end(); ++it2)
+            for (std::set<int>::iterator it2 = studentEvents[s].begin(); it2 != studentEvents[s].end(); ++it2)
             {
                 int e1 = *it1;
                 int e2 = *it2;
@@ -51,8 +51,6 @@ Instance::Instance(std::istream& in)
                 }
             }
         }
-        
-        studentEvents.clear();
     }
     
     // Read features available in rooms
@@ -71,17 +69,17 @@ Instance::Instance(std::istream& in)
     }
     
     // Initially set all timeslots and rooms as candidates for all events
-    candidateTimeslots = std::vector<std::set<int> >(nevents, std::set<int>());
-    candidateRooms = std::vector<std::set<int> >(nevents, std::set<int>());
+    eventTimeslots = std::vector<std::set<int> >(nevents, std::set<int>());
+    eventRooms = std::vector<std::set<int> >(nevents, std::set<int>());
     for (int e = 0; e < nevents; ++e)
     {
         for (int t = 0; t < NUM_TIMESLOTS; ++t)
         {
-            candidateTimeslots[e].insert(t);
+            eventTimeslots[e].insert(t);
         }
         for (int r = 0; r < nrooms; ++r)
         {
-            candidateRooms[e].insert(r);
+            eventRooms[e].insert(r);
         }
     }
     
@@ -100,7 +98,7 @@ Instance::Instance(std::istream& in)
                     // If not found
                     if (roomFeatures[r].find(f) == roomFeatures[r].end())
                     {
-                        candidateRooms[e].erase(r);
+                        eventRooms[e].erase(r);
                     }
                 }
             }
@@ -114,7 +112,7 @@ Instance::Instance(std::istream& in)
         {
             if (roomSizes[r] < eventAttendance[e])
             {
-                candidateRooms[e].erase(r);
+                eventRooms[e].erase(r);
             }
         }
     }
@@ -125,11 +123,11 @@ Instance::Instance(std::istream& in)
     {
         for (int e2 = 0; e2 < nevents; ++e2)
         {
-            if (e1 < e2 && candidateRooms[e1].size() == 1
-                    && candidateRooms[e2].size() == 1)
+            if (e1 < e2 && eventRooms[e1].size() == 1
+                    && eventRooms[e2].size() == 1)
             {
-                int e1Room = *candidateRooms[e1].begin();
-                int e2Room = *candidateRooms[e2].begin();
+                int e1Room = *eventRooms[e1].begin();
+                int e2Room = *eventRooms[e2].begin();
                 if (e1Room == e2Room)
                 {
                     gamma[e1].insert(e2);
@@ -148,8 +146,28 @@ Instance::Instance(std::istream& in)
             in >> available;
             if (available == 0)
             {
-                candidateTimeslots[e].erase(t);
+                eventTimeslots[e].erase(t);
             }
+        }
+    }
+    
+    timeslotEvents = std::vector<std::set<int> >(NUM_TIMESLOTS, std::set<int>());
+    for (int u = 0; u < nevents; ++u)
+    {
+        for (std::set<int>::iterator itT = eventTimeslots[u].begin(); itT != eventTimeslots[u].end(); ++itT)
+        {
+            int t = *itT;
+            timeslotEvents[t].insert(u);
+        }
+    }
+    
+    roomEvents = std::vector<std::set<int> >(nrooms, std::set<int>());
+    for (int u = 0; u < nevents; ++u)
+    {
+        for (std::set<int>::iterator itR = eventRooms[u].begin(); itR != eventRooms[u].end(); ++itR)
+        {
+            int r = *itR;
+            roomEvents[r].insert(u);
         }
     }
     
@@ -189,6 +207,56 @@ Instance::Instance(std::istream& in)
 
 void Instance::print(std::ostream& out)
 {
+}
+
+void intersection(std::set<int>& set1, std::set<int>& set2,
+        std::set<int>& result)
+{
+    std::set_intersection(set1.begin(), set1.end(),
+                          set2.begin(), set2.end(),
+                          std::inserter(result, result.end()));
+}
+
+void intersection(std::set<int>& set1, std::set<int>& set2,
+        std::set<int>& set3, std::set<int>& result)
+{
+    std::set<int> intermediate;
+    std::set_intersection(set1.begin(), set1.end(),
+                          set2.begin(), set2.end(),
+                          std::inserter(intermediate, intermediate.end()));
+    
+    std::set_intersection(set3.begin(), set3.end(),
+                          intermediate.begin(), intermediate.end(),
+                          std::inserter(result, result.end()));
+}
+
+void Instance::eventsForStudentTimeslotRoom(int student, int timeslot, int room, std::set<int>& events)
+{
+    intersection(studentEvents[student],
+                 timeslotEvents[timeslot],
+                 roomEvents[room],
+                 events);
+}
+
+void Instance::eventsForStudentTimeslot(int student, int timeslot, std::set<int>& events)
+{
+    intersection(studentEvents[student],
+                 timeslotEvents[timeslot],
+                 events);
+}
+
+void Instance::eventsForTimeslotRoom(int timeslot, int room, std::set<int>& events)
+{
+    intersection(timeslotEvents[timeslot],
+                 roomEvents[room],
+                 events);
+}
+
+void Instance::commonTimeslots(int event1, int event2, std::set<int>& timeslots)
+{
+    intersection(eventTimeslots[event1],
+                 eventTimeslots[event2],
+                 timeslots);
 }
 
 Solution::Solution(Instance* instance) :
