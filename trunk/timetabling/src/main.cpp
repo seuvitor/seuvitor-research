@@ -1,9 +1,14 @@
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 #include <ctime>
 
 #include "timetabling.h"
 #include "bb.h"
+#include "rep.h"
+#include "mono.h"
+#include "colrep.h"
+#include "colmono.h"
 
 int main(int argc, char** argv) {
 
@@ -26,23 +31,54 @@ int main(int argc, char** argv) {
     time_t start;
     start = time(NULL);
 
-    if (algorithmName.compare("bb") == 0)
+    std::clog << "instance = " << fileName.substr(0, fileName.size() - 4) << std::endl;
+
+    try {
+        if (algorithmName.compare("bb") == 0)
+        {
+    	    bb_constructSolution(&instance, &solution);
+        }
+        else if (algorithmName.compare("rep") == 0)
+        {
+            rep_constructSolution(&instance, &solution);
+        }
+        else if (algorithmName.compare("mono") == 0)
+        {
+            mono_constructSolution(&instance, &solution);
+        }
+        else if (algorithmName.compare("colrep") == 0)
+        {
+            colrep_constructSolution(&instance, &solution);
+        }
+        else if (algorithmName.compare("colmono") == 0)
+        {
+            colmono_constructSolution(&instance, &solution);
+        }
+    }
+    catch (std::logic_error e)
     {
-	    bb_constructSolution(&instance, &solution);
+        std::clog << "Error: " << e.what() << std::endl;
+    }
+    
+    for (int e = 0; e < instance.nevents; ++e)
+	{
+        std::cout << solution.eventTimeslots[e] << " "
+                << solution.eventRooms[e] << std::endl;
     }
     
     time_t elapsedTime = time(NULL) - start;
+    std::clog << "elapsedTime " << elapsedTime << std::endl;
     
     if (solution.isValid())
     {
-        std::cout << fileName.substr(0, fileName.size() - 4) << "\t"
+        std::clog << fileName.substr(0, fileName.size() - 4) << "\t"
         		<< solution.distanceToFeasibility() << "\t"
         		<< solution.softCost() << "\t"
         		<< elapsedTime << std::endl;
     }
     else
     {
-        std::cout << fileName.substr(0, fileName.size() - 4)
+        std::clog << fileName.substr(0, fileName.size() - 4)
         		<< " Valid solution not found. " << std::endl;
     }
     
